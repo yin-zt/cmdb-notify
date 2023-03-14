@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"github.com/gorilla/mux"
@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func main() {
+func Start() {
 	r := mux.NewRouter()
 	routes.RegisterServerRouters(r)
 	http.Handle("/", r)

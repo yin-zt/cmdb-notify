@@ -1,6 +1,9 @@
 package server
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/yin-zt/cmdb-notify/core/server"
+)
 
 // Cmd run http server
 var Cmd = &cobra.Command{
@@ -13,5 +16,5 @@ var Cmd = &cobra.Command{
 }
 
 func main() {
-
+	server.Start()
 }
