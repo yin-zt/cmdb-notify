@@ -17,12 +17,14 @@ type Data struct {
 }
 
 type ExtInfo struct {
-	ChangeFields []string    `json:"_change_fields"`
-	DiffData     interface{} `json:"diff_data"`
-	InstanceId   string      `json:"instance_id"`
-	InstanceName string      `json:"instance_name"`
-	ObjectId     string      `json:"object_id"`
+	ChangeFields []string               `json:"_change_fields"`
+	DiffData     map[string]interface{} `json:"diff_data"`
+	InstanceId   string                 `json:"instance_id"`
+	InstanceName string                 `json:"instance_name"`
+	ObjectId     string                 `json:"object_id"`
 }
 
-type DiffData struct {
+type NewOld struct {
+	Old string `json:"old"`
+	New string `json:"new"`
 }
