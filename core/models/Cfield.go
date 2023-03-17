@@ -1,5 +1,10 @@
 package models
 
+type AllModel struct {
+	System string `json:"system"`
+	Topic  string `json:"topic"`
+}
+
 type Cobj struct {
 	System string `json:"system"`
 	Topic  string `json:"topic"`
@@ -22,9 +27,4 @@ type ExtInfo struct {
 	InstanceId   string                 `json:"instance_id"`
 	InstanceName string                 `json:"instance_name"`
 	ObjectId     string                 `json:"object_id"`
-}
-
-type NewOld struct {
-	Old string `json:"old"`
-	New string `json:"new"`
 }

@@ -2,7 +2,7 @@ package models
 
 type OperateField struct {
 	Model      string `json:"model"`
-	Field      string `json:"model"`
+	Field      string `json:"field"`
 	TargetId   string `json:"target_id"`
 	ChangeData Diff   `json:"diff_data"`
 }
