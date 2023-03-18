@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
 	"github.com/yin-zt/cmdb-notify/core/controllers"
@@ -36,4 +37,5 @@ func Start() {
 	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	log.Error("server exiting")
+	fmt.Println("test only")
 }

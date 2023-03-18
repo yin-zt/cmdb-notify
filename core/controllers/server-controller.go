@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	config "github.com/yin-zt/cmdb-notify/core/conf"
 	"github.com/yin-zt/cmdb-notify/core/loger"
 	"github.com/yin-zt/cmdb-notify/core/models"
@@ -25,6 +26,8 @@ var (
 	C1 = Common{}
 )
 
+// ChangedObj 用于处理cmdb消息订阅推送过来的数据，判断变更字段是否为监听字段；
+// 若是，则解析请求体并将信息以任务形式传入channel中，由特定routine来处理
 func ChangedObj(w http.ResponseWriter, r *http.Request) {
 	defer OpeLog.Flush()
 	TestObj := &models.AllModel{}
@@ -50,7 +53,6 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 						ChangeData: models.Diff{Old: oValue, New: nValue},
 					}
 					OperateFieldChan <- cTask
-
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)
 				} else {
 					OpeLog.Info("no match")
@@ -76,6 +78,8 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 				OpeLog.Info(ChgObj.Topic)
 				OpeLog.Info(ChgObj.Data)
 			}
+		} else {
+			fmt.Println("do something")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
