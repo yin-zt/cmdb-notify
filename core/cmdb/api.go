@@ -115,6 +115,19 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 	return result, isSuccess
 }
 
+// UpdateOrCreateObjs 更新或者创建模型实例
+func (ez *Easyapi) UpdateOrCreateObjs(objectId string, key []string, postData []map[string]interface{}) {
+
+	var (
+		params = map[string]interface{}{"keys": key, "datas": postData}
+		url    = "/cmdbservice/object/" + objectId + "/instance/_import"
+	)
+	reqRet, reqIsSuccess := ez.SendRequest(url, "POST", params)
+	fmt.Println(reqRet)
+	fmt.Println(reqIsSuccess)
+
+}
+
 // GetModelFields 获取模型中的特殊字段
 func (ez *Easyapi) GetModelFields(objectId string) ([]string, bool) {
 	var (
