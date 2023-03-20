@@ -115,6 +115,32 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 	return result, isSuccess
 }
 
+// GetModelFields 获取模型中的特殊字段
+func (ez *Easyapi) GetModelFields(objectId string) ([]string, bool) {
+	var (
+		isSuccess bool
+		result    []string
+		//reqData map[string]interface{}
+		param = map[string]interface{}{}
+		url   = "/cmdb/object/attr/" + objectId
+	)
+	reqRet, reqIsSuccess := ez.SendRequest(url, "Get", param)
+	if reqIsSuccess {
+		reqMap := ConvStringToMap(reqRet)
+		reqData := reqMap["data"].([]interface{})
+		for _, value := range reqData {
+			perField := value.(map[string]interface{})
+			filedVal := perField["id"]
+			fieldStr := fmt.Sprintf("%s", filedVal)
+			if strings.HasPrefix(fieldStr, "P_") {
+				result = append(result, fieldStr)
+			}
+		}
+		isSuccess = true
+	}
+	return result, isSuccess
+}
+
 // SendRequest to EasyOps OpenApi
 func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]interface{}) (string, bool) {
 	var isSuccess = false

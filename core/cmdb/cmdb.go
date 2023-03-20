@@ -25,8 +25,10 @@ func Test() {
 
 	fmt.Println("-------GetAllInstance-------")
 	fieldInPostData := map[string]int{"instanceId": 1, "name": 1}
+	objSearch := map[string]string{"instanceId": "5d791458db54d"}
 	postData := map[string]interface{}{"page_size": 3000, "page": 1}
 	postData["fields"] = fieldInPostData
+	postData["query"] = objSearch
 	ret, isSuccess := easyApi.GetAllInstance("BUSINESSLEVEL", postData, 3)
 	fmt.Println("[Result]", ret, isSuccess)
 	retMap, isSuccess := easyApi.ChangeListToMap(ret, []string{"name"})
