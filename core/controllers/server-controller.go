@@ -56,8 +56,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)
 				} else {
 					OpeLog.Info("no match")
-					OpeLog.Info(Obj.Topic)
-					OpeLog.Info(Obj.Data)
+					OpeLog.Info(Obj.Topic, Obj.Data)
 					continue
 				}
 			}
@@ -75,8 +74,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 				OpeLog.Infof("success to send a relation change task to channel %v", &rTask)
 			} else {
 				OpeLog.Info("no match")
-				OpeLog.Info(ChgObj.Topic)
-				OpeLog.Info(ChgObj.Data)
+				OpeLog.Info(ChgObj.Topic, ChgObj.Data)
 			}
 		} else {
 			fmt.Println("do something")

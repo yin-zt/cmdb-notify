@@ -2,6 +2,8 @@ package cmdb
 
 import (
 	"fmt"
+	config "github.com/yin-zt/cmdb-notify/core/conf"
+
 	//"os"
 
 	"bytes"
@@ -26,6 +28,7 @@ import (
 
 var (
 	respon any
+	Easy   = NewEasyapi(config.CmdbHost, config.CmdbAk, config.CmdbSk)
 )
 
 // EasyApi specifies a tool using EasyOps CMDB api
@@ -88,8 +91,6 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 			fmt.Println("[Fatal error] ", err.Error())
 			return result, isSuccess
 		}
-		fmt.Println(reqData["list"])
-		fmt.Println(reflect.TypeOf(reqData["list"]))
 		req := reqData["list"].([]interface{})
 		for _, i := range req {
 			result = append(result, i.(map[string]interface{}))
