@@ -52,7 +52,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 						TargetId: Obj.Data.TargetId,
 						Pflag:    false,
 						//ChangeData: models.Diff{Old: oValue, New: nValue},
-						ChangeData: models.Diff{Data: diff},
+						ChangeData: diff,
 					}
 					OperateFieldChan <- cTask
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)
@@ -64,7 +64,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 						TargetId: Obj.Data.TargetId,
 						Pflag:    true,
 						//ChangeData: models.Diff{Old: "", New: ""},
-						ChangeData: models.Diff{Data: diff},
+						ChangeData: diff,
 					}
 					OperateFieldChan <- cTask
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)

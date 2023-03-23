@@ -57,7 +57,6 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 					fmt.Println(finalData)
 					fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
 				}
-				fmt.Println("fffffffffffffffffffffff")
 			} else {
 				fmt.Println("has not status")
 			}
@@ -181,7 +180,7 @@ func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata 
 }
 
 // CheckIpPort 检查修改字段中是否包含ip和port字段
-func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData interface{}, wholeVal map[string]interface{}) string {
+func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData map[string]interface{}, wholeVal map[string]interface{}) string {
 	var (
 		portFlag, ipFlag          = "", ""
 		portBool, ipBool          bool
@@ -195,29 +194,31 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 			ipFlag = objIndex
 		}
 	}
-	fmt.Println(changeData)
-	fmt.Printf("%T", changeData)
-	changeRealVal, ok := changeData.(map[string]interface{})
-	if !ok {
-		response = "修改的字段新旧值并不是map类型"
-		panic(response)
+	if portFlag != "" {
+		portTempData := changeData[portFlag]
+		if portTempData != nil {
+			portBool = true
+			oldNewPort := portTempData.(map[string]interface{})
+			portStr = oldNewPort["old"].(string)
+		}
 	}
-	if val, ok := changeRealVal[portFlag]; ok {
-		portBool = true
-		portStr = val.(string)
-	}
-	if val, ok := changeRealVal[ipFlag]; ok {
-		ipBool = true
-		ipStr = val.(string)
+	if ipFlag != "" {
+		ipTempData := changeData[ipFlag]
+		if ipTempData != nil {
+			ipBool = true
+			ipTempMap := ipTempData.(map[string]interface{})
+			ipStr = ipTempMap["old"].(string)
+		}
 	}
 	if ipBool && portBool {
-		targetStr = ipStr + "_" + portStr
+		targetStr = ipStr + "-" + portStr
 	} else if ipBool {
-		portStr = wholeVal["exporterPort"].(string)
-		targetStr = ipStr + "_" + portStr
+		portInt := wholeVal["exporterPort"].(int)
+		portStr = fmt.Sprintf("%d", portInt)
+		targetStr = ipStr + "-" + portStr
 	} else if portBool {
 		ipStr = wholeVal["ip"].(string)
-		targetStr = ipStr + "_" + portStr
+		targetStr = ipStr + "-" + portStr
 	} else {
 		targetStr = ""
 	}
