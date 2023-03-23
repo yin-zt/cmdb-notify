@@ -29,10 +29,13 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 			objId := ftask.Model
 			instanceId := ftask.TargetId
 			objField := ftask.Field
+			proSearchFields := config.BigMap[objId][objField]
+
+			DiffData := ftask.ChangeData
 			if ftask.Pflag {
 				objField = "P_"
 			}
-			proSearchFields := config.BigMap[objId][objField]
+
 			result := f.FindNeedSearchFields(proSearchFields)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
@@ -50,8 +53,9 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 				if targetCmdbData[val] != "online" {
 					fmt.Println("offline")
 				} else {
-					finalData := f.AnalyFieldData(objId, "test", targetCmdbData, proSearchFields)
+					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
 					fmt.Println(finalData)
+					fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
 				}
 				fmt.Println("fffffffffffffffffffffff")
 			} else {
@@ -74,7 +78,7 @@ func (f OperationFieldService) FindNeedSearchFields(retData map[string]string) *
 }
 
 // AnalyFieldData 分析从cmdb获取到的数据，并返回适合上报cmdb接口的数据
-func (f OperationFieldService) AnalyFieldData(model, cfield string, data map[string]interface{}, fdata map[string]string) map[string]interface{} {
+func (f OperationFieldService) AnalyFieldData(model string, data map[string]interface{}, fdata map[string]string) map[string]interface{} {
 	var retData = map[string]interface{}{}
 	for key, val := range fdata {
 		count := strings.Count(key, ".")
@@ -176,6 +180,46 @@ func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata 
 	}
 }
 
-func test() {
-	fmt.Println(111)
+// CheckIpPort 检查修改字段中是否包含ip和port字段
+func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData interface{}, wholeVal map[string]interface{}) string {
+	var (
+		portFlag, ipFlag          = "", ""
+		portBool, ipBool          bool
+		portStr, ipStr, targetStr string
+	)
+	for objIndex, objField := range fdata {
+		if objField == "exporterPort" {
+			portFlag = objIndex
+		}
+		if objField == "ip" {
+			ipFlag = objIndex
+		}
+	}
+	fmt.Println(changeData)
+	fmt.Printf("%T", changeData)
+	changeRealVal, ok := changeData.(map[string]interface{})
+	if !ok {
+		response = "修改的字段新旧值并不是map类型"
+		panic(response)
+	}
+	if val, ok := changeRealVal[portFlag]; ok {
+		portBool = true
+		portStr = val.(string)
+	}
+	if val, ok := changeRealVal[ipFlag]; ok {
+		ipBool = true
+		ipStr = val.(string)
+	}
+	if ipBool && portBool {
+		targetStr = ipStr + "_" + portStr
+	} else if ipBool {
+		portStr = wholeVal["exporterPort"].(string)
+		targetStr = ipStr + "_" + portStr
+	} else if portBool {
+		ipStr = wholeVal["ip"].(string)
+		targetStr = ipStr + "_" + portStr
+	} else {
+		targetStr = ""
+	}
+	return targetStr
 }

@@ -9,6 +9,5 @@ type OperateField struct {
 }
 
 type Diff struct {
-	Old string `json:"old"`
-	New string `json:"new"`
+	Data interface{}
 }
