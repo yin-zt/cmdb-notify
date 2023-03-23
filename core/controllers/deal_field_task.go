@@ -175,7 +175,3 @@ func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata 
 		}
 	}
 }
-
-func test() {
-
-}
