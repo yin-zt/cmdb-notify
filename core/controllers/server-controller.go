@@ -50,7 +50,18 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 						Model:      changedModel,
 						Field:      value,
 						TargetId:   Obj.Data.TargetId,
+						Pflag:      false,
 						ChangeData: models.Diff{Old: oValue, New: nValue},
+					}
+					OperateFieldChan <- cTask
+					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)
+				} else if strings.HasPrefix("P_", value) || config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, value)] {
+					cTask := &models.OperateField{
+						Model:      changedModel,
+						Field:      value,
+						TargetId:   Obj.Data.TargetId,
+						Pflag:      true,
+						ChangeData: models.Diff{Old: "", New: ""},
 					}
 					OperateFieldChan <- cTask
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)

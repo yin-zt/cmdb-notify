@@ -2,3 +2,5 @@
 
 # note file content
 .txt
+models.go
+config.go

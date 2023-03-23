@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"reflect"
 	"sort"
 	"time"
 )
@@ -41,7 +40,6 @@ type Easyapi struct {
 
 // NewEasyapi create a new EasyApi
 func NewEasyapi(cmdbAddr, ak, sk string) *Easyapi {
-	fmt.Println("Create a new EasyApi", cmdbAddr, ak, sk)
 	header := map[string]string{"Host": "openapi.easyops-only.com", "Content-Type": "application/json;charset=UTF-8"}
 	return &Easyapi{cmdbAddr, ak, sk, header}
 }
@@ -129,8 +127,8 @@ func (ez *Easyapi) UpdateOrCreateObjs(objectId string, key []string, postData []
 
 }
 
-// GetModelFields 获取模型中的特殊字段
-func (ez *Easyapi) GetModelFields(objectId string) ([]string, bool) {
+// GetModelFieldsWithP 获取模型中的以P_开头的属性字段
+func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
 	var (
 		isSuccess bool
 		result    []string
@@ -187,7 +185,6 @@ func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]i
 		}
 		//  the Host header is promoted to the Request.Host field and removed from the Header map.
 		req.Host = "openapi.easyops-only.com"
-		fmt.Println("[Request] ", req)
 		response, err := client.Do(req)
 		if err != nil {
 			fmt.Println("[Fatal error] ", err.Error())
@@ -199,7 +196,6 @@ func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]i
 			fmt.Println("[Fatal error] ", err.Error())
 			return ret, isSuccess
 		}
-		fmt.Println(reflect.TypeOf(body))
 		isSuccess = true
 		ret = string(body)
 
@@ -222,7 +218,6 @@ func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]i
 		//  the Host header is promoted to the Request.Host field and removed from the Header map.
 		req.Host = "openapi.easyops-only.com"
 
-		fmt.Println("[Request] ", req)
 		response, err := client.Do(req)
 		if err != nil {
 			fmt.Println("[Fatal error] ", err.Error())
@@ -235,11 +230,9 @@ func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]i
 			return ret, isSuccess
 		}
 
-		fmt.Println(reflect.TypeOf(body))
 		isSuccess = true
 		ret = string(body)
 	} else {
-		fmt.Println(method)
 		respon = "Request method not known"
 		panic(respon)
 	}

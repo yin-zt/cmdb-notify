@@ -4,6 +4,7 @@ type OperateField struct {
 	Model      string `json:"model"`
 	Field      string `json:"field"`
 	TargetId   string `json:"target_id"`
+	Pflag      bool   `json:"pflag"`
 	ChangeData Diff   `json:"diff_data"`
 }
 
