@@ -5,6 +5,7 @@ import (
 	"github.com/yin-zt/cmdb-notify/core/cmdb"
 	config "github.com/yin-zt/cmdb-notify/core/conf"
 	"github.com/yin-zt/cmdb-notify/core/models"
+	"github.com/young2j/gocopy"
 	"strings"
 	"time"
 )
@@ -35,11 +36,10 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 			if ftask.Pflag {
 				objField = "P_"
 			}
-
-			result := f.FindNeedSearchFields(proSearchFields)
+			fieldResult := f.FindNeedSearchFields(proSearchFields)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
-			postData["fields"] = result
+			postData["fields"] = fieldResult
 			postData["query"] = objSearch
 			findObj, err := cmdb.Easy.GetAllInstance(objId, postData, 1)
 			if !err {
@@ -47,15 +47,21 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 			}
 			if len(findObj) != 1 {
 				OpeLog.Errorf("can not find out this model: %s, instanceID: %s", objId, instanceId)
+				continue
 			}
 			targetCmdbData := findObj[0]
+			fmt.Println(targetCmdbData)
 			if val, ok := config.ModelStatusMap[objId]; ok {
-				if targetCmdbData[val] != "online" {
+				if targetCmdbData[val].(string) != "online" {
 					fmt.Println("offline")
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
 					fmt.Println(finalData)
-					fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
+					if len(finalData) >= 1 {
+						fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
+					} else {
+						OpeLog.Errorf("this instanceID: %s, has null postData", objId)
+					}
 				}
 			} else {
 				fmt.Println("has not status")
@@ -77,15 +83,20 @@ func (f OperationFieldService) FindNeedSearchFields(retData map[string]string) *
 }
 
 // AnalyFieldData 分析从cmdb获取到的数据，并返回适合上报cmdb接口的数据
-func (f OperationFieldService) AnalyFieldData(model string, data map[string]interface{}, fdata map[string]string) map[string]interface{} {
+func (f OperationFieldService) AnalyFieldData(model string, data map[string]interface{}, fdata map[string]string) []map[string]interface{} {
+	var finalRetData []map[string]interface{}
 	var retData = map[string]interface{}{}
 	for key, val := range fdata {
 		count := strings.Count(key, ".")
 		switch count {
 		case 0:
 			findVal := data[key]
-			findRealVal, _ := findVal.(string)
-			f.MakeKeyVal(val, findRealVal, retData)
+			switch findRealVal := findVal.(type) {
+			case string:
+				f.MakeKeyVal(val, findRealVal, retData)
+			case []interface{}:
+				f.MakeKeyVal(val, findRealVal, retData)
+			}
 		case 1:
 			firstKey := strings.Split(key, ".")[0]
 			secondKey := strings.Split(key, ".")[1]
@@ -97,7 +108,7 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 				itemVal := item.(map[string]interface{})
 				if realVal, ok := itemVal[secondKey]; !ok {
 					response = "返回的关联数据中没有这个键的值"
-					panic(response)
+					continue
 				} else {
 					storeVal = storeVal + ";" + realVal.(string)
 				}
@@ -107,17 +118,32 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 		}
 	}
 	f.MakePfieldVal(retData, fdata, data)
+	fmt.Println(retData)
+	fmt.Println("llllllllllllllll")
 	if model == "HOST" {
 		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
 		retData["exporterPort"] = 9100
 	} else {
-		retData["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], retData["exporterPort"])
+		switch portValues := retData["exporterPort"].(type) {
+		case string:
+			retData["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], retData["exporterPort"])
+			finalRetData = append(finalRetData, retData)
+		case []interface{}:
+			for _, portItem := range portValues {
+				mTemp := make(map[string]interface{})
+				gocopy.Copy(&mTemp, &retData)
+				mTemp["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], portItem.(string))
+				mTemp["exporterPort"] = portItem.(string)
+				finalRetData = append(finalRetData, mTemp)
+			}
+		}
+
 	}
-	return retData
+	return finalRetData
 }
 
 // MakeKeyVal 根据字典映射值中是否包含"."进行特定处理
-func (f OperationFieldService) MakeKeyVal(key, addVal string, data map[string]interface{}) {
+func (f OperationFieldService) MakeKeyVal(key string, addVal interface{}, data map[string]interface{}) {
 	if addVal == "" {
 		return
 	}
@@ -125,15 +151,15 @@ func (f OperationFieldService) MakeKeyVal(key, addVal string, data map[string]in
 		firstKey := strings.Split(key, ".")[0]
 		secondKey := strings.Split(key, ".")[1]
 		if _, ok := data[firstKey]; !ok {
-			data[firstKey] = map[string]string{secondKey: addVal}
+			data[firstKey] = map[string]string{secondKey: addVal.(string)}
 		} else {
 			tempData := data[firstKey]
 			dictData, ok := tempData.(map[string]string)
 			if ok {
 				if _, ok := dictData[secondKey]; ok {
-					dictData[secondKey] = dictData[secondKey] + ";" + addVal
+					dictData[secondKey] = dictData[secondKey] + ";" + addVal.(string)
 				} else {
-					dictData[secondKey] = addVal
+					dictData[secondKey] = addVal.(string)
 				}
 				data[firstKey] = dictData
 			}
@@ -145,7 +171,7 @@ func (f OperationFieldService) MakeKeyVal(key, addVal string, data map[string]in
 				response = "singleField is not a string field"
 				panic(response)
 			}
-			tempVal := stringVal + ";" + addVal
+			tempVal := stringVal + ";" + addVal.(string)
 			data[key] = strings.Trim(tempVal, ";")
 		} else {
 			data[key] = addVal
@@ -153,6 +179,13 @@ func (f OperationFieldService) MakeKeyVal(key, addVal string, data map[string]in
 		}
 	}
 }
+
+//func (f OperationFieldService) MakeKeyMultiVal(key, addVal []interface{}, data map[string]interface{}){
+//	if len(addVal) == 0{
+//		return
+//	}
+//
+//}
 
 func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata map[string]string, cmdbData map[string]interface{}) {
 	for _, value := range fdata {
@@ -180,11 +213,12 @@ func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata 
 }
 
 // CheckIpPort 检查修改字段中是否包含ip和port字段
-func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData map[string]interface{}, wholeVal map[string]interface{}) string {
+func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData map[string]interface{}, wholeVal []map[string]interface{}) []string {
 	var (
-		portFlag, ipFlag          = "", ""
-		portBool, ipBool          bool
-		portStr, ipStr, targetStr string
+		portFlag, ipFlag              = "", ""
+		portBool, ipBool              bool
+		ipStr, targetStr              string
+		portList, returnName, delName []string
 	)
 	for objIndex, objField := range fdata {
 		if objField == "exporterPort" {
@@ -199,7 +233,14 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		if portTempData != nil {
 			portBool = true
 			oldNewPort := portTempData.(map[string]interface{})
-			portStr = oldNewPort["old"].(string)
+			switch portVals := oldNewPort["old"].(type) {
+			case []interface{}:
+				for _, oneport := range portVals {
+					portList = append(portList, oneport.(string))
+				}
+			case string:
+				portList = append(portList, portVals)
+			}
 		}
 	}
 	if ipFlag != "" {
@@ -211,16 +252,44 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		}
 	}
 	if ipBool && portBool {
-		targetStr = ipStr + "-" + portStr
+		for _, onePort := range portList {
+			targetStr = ipStr + "-" + onePort
+			returnName = append(returnName, targetStr)
+		}
 	} else if ipBool {
-		portInt := wholeVal["exporterPort"].(int)
-		portStr = fmt.Sprintf("%d", portInt)
-		targetStr = ipStr + "-" + portStr
+		for _, nowItem := range wholeVal {
+			portInfo := nowItem["exporterPort"]
+			switch port := portInfo.(type) {
+			case string:
+				returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, port))
+			case int:
+				returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, port))
+			}
+		}
 	} else if portBool {
-		ipStr = wholeVal["ip"].(string)
-		targetStr = ipStr + "-" + portStr
+		if len(wholeVal) == 0 {
+			return returnName
+		}
+		ipStr = wholeVal[0]["ip"].(string)
+		for _, portVal := range portList {
+			returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, portVal))
+		}
 	} else {
-		targetStr = ""
+		OpeLog.Infof("do not delete ip or port field")
 	}
-	return targetStr
+	for _, oneStr := range returnName {
+		var begin bool
+		for _, oneObj := range wholeVal {
+			if val := oneObj["exporterName"]; val != nil {
+				if val == oneStr {
+					begin = true
+					break
+				}
+			}
+		}
+		if !begin {
+			delName = append(delName, oneStr)
+		}
+	}
+	return delName
 }

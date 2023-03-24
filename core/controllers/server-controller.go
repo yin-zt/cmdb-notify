@@ -78,11 +78,11 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 			ChgObj := &models.RelObj{}
 			utils.ParseBody(r, ChgObj)
 			relateField := ChgObj.Data.ExtInfo.ChangedRel
-			if _, ok := config.BigMap[relateField]; ok {
+			if _, ok := config.BigMap[changedModel]; ok {
 				rTask := &models.OperateRelation{
 					Model:    changedModel,
 					Field:    relateField,
-					TargetId: ChgObj.Data.ExtInfo.TargetId,
+					TargetId: ChgObj.Data.TargetId,
 				}
 				OperateRelationChan <- rTask
 				OpeLog.Infof("success to send a relation change task to channel %v", &rTask)

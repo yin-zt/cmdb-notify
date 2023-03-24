@@ -18,5 +18,4 @@ type Data1 struct {
 
 type ExtInfo1 struct {
 	ChangedRel string `json:"relation_side_id"`
-	TargetId   string `json:"target_id"`
 }
