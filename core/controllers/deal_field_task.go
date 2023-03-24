@@ -123,6 +123,7 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 	if model == "HOST" {
 		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
 		retData["exporterPort"] = 9100
+		finalRetData = append(finalRetData, retData)
 	} else {
 		switch portValues := retData["exporterPort"].(type) {
 		case string:
@@ -263,7 +264,7 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 			case string:
 				returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, port))
 			case int:
-				returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, port))
+				returnName = append(returnName, fmt.Sprintf("%s-%d", ipStr, port))
 			}
 		}
 	} else if portBool {
