@@ -103,8 +103,6 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 			relateData := data[firstKey]
 			storeVal := ""
 			for _, item := range relateData.([]interface{}) {
-				fmt.Println(item)
-				fmt.Printf("%T", item)
 				itemVal := item.(map[string]interface{})
 				if realVal, ok := itemVal[secondKey]; !ok {
 					response = "返回的关联数据中没有这个键的值"
@@ -115,19 +113,43 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 			}
 			storeVal = strings.Trim(storeVal, ";")
 			f.MakeKeyVal(val, storeVal, retData)
+		case 2:
+			firstKey := strings.Split(key, ".")[0]
+			secondKey := strings.Split(key, ".")[1]
+			thirdKey := strings.Split(key, ".")[2]
+			firstLevelData := data[firstKey]
+			storeVal := ""
+			for _, item := range firstLevelData.([]interface{}) {
+				itemVal := item.(map[string]interface{})
+				if secondLevelData, ok := itemVal[secondKey]; !ok {
+					response = "返回的第二层关联数据中没有这个键的值"
+					continue
+				} else {
+					for _, secondLevelVal := range secondLevelData.([]interface{}) {
+						thirdLevelData := secondLevelVal.(map[string]interface{})
+						if thirdLevelVal, ok := thirdLevelData[thirdKey]; !ok {
+							response = "返回的第三层关联数据中没有这个键的值"
+							continue
+						} else {
+							storeVal = storeVal + ";" + thirdLevelVal.(string)
+						}
+					}
+				}
+			}
+			f.MakeKeyVal(val, strings.Trim(storeVal, ";"), retData)
 		}
 	}
 	f.MakePfieldVal(retData, fdata, data)
-	fmt.Println(retData)
-	fmt.Println("llllllllllllllll")
 	if model == "HOST" {
 		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
 		retData["exporterPort"] = 9100
+		retData["exporterType"] = "host" + "-exporter"
 		finalRetData = append(finalRetData, retData)
 	} else {
 		switch portValues := retData["exporterPort"].(type) {
 		case string:
 			retData["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], retData["exporterPort"])
+			retData["exporterType"] = strings.ToLower(model) + "-exporter"
 			finalRetData = append(finalRetData, retData)
 		case []interface{}:
 			for _, portItem := range portValues {
@@ -135,6 +157,7 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 				gocopy.Copy(&mTemp, &retData)
 				mTemp["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], portItem.(string))
 				mTemp["exporterPort"] = portItem.(string)
+				mTemp["exporterType"] = strings.ToLower(model) + "-exporter"
 				finalRetData = append(finalRetData, mTemp)
 			}
 		}
