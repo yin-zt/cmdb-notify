@@ -60,7 +60,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					diff := Obj.Data.ExtInfo.DiffData
 					cTask := &models.OperateField{
 						Model:    changedModel,
-						Field:    value,
+						Field:    "P_",
 						TargetId: Obj.Data.TargetId,
 						Pflag:    true,
 						//ChangeData: models.Diff{Old: "", New: ""},
@@ -78,14 +78,25 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 			ChgObj := &models.RelObj{}
 			utils.ParseBody(r, ChgObj)
 			relateField := ChgObj.Data.ExtInfo.ChangedRel
-			if _, ok := config.BigMap[changedModel]; ok {
-				rTask := &models.OperateRelation{
-					Model:    changedModel,
-					Field:    relateField,
-					TargetId: ChgObj.Data.TargetId,
+			if targetFields, ok := config.BigMap[changedModel]; ok {
+				if _, ok := targetFields[relateField]; ok {
+					rTask := &models.OperateRelation{
+						Model:    changedModel,
+						Field:    relateField,
+						TargetId: ChgObj.Data.TargetId,
+					}
+					OperateRelationChan <- rTask
+					OpeLog.Infof("success to send a relation change task to channel %v", &rTask)
+				} else if config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, relateField)] {
+					rTask := &models.OperateRelation{
+						Model:    changedModel,
+						Field:    "P_",
+						TargetId: ChgObj.Data.TargetId,
+						Flag:     true,
+					}
+					OperateRelationChan <- rTask
+					OpeLog.Infof("success to send a relation change task (special fields) to channel %v", &rTask)
 				}
-				OperateRelationChan <- rTask
-				OpeLog.Infof("success to send a relation change task to channel %v", &rTask)
 			} else {
 				OpeLog.Info("no match")
 				OpeLog.Info(ChgObj.Topic, ChgObj.Data)
