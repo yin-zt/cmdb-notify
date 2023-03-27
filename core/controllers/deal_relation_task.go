@@ -31,8 +31,6 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 				}
 			}
 			fieldResult := f.FindNeedSearchFields(proSearchFields)
-			fmt.Println(fieldResult)
-			fmt.Println("ffffffffffffffffffffffffffffffffffffff")
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
 			postData["fields"] = fieldResult
@@ -53,7 +51,6 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 			if statusField, ok := config.ModelStatusMap[objId]; ok {
 				if targetCmdbData[statusField].(string) != "online" {
 					OpeLog.Infof("This object status is not online, instanceID: %s; model: %s", instanceId, objId)
-					fmt.Println("This object status is not online, instanceID")
 					return
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
@@ -62,7 +59,6 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 			} else {
 				finalData := f.AnalyOtherRelationData(objId, targetCmdbData, proSearchFields)
 				fmt.Println(finalData)
-				fmt.Println("ooooooooooooooooooooooo")
 			}
 		case <-timer.C: //5s同步一次
 			fmt.Println("relationship okr")

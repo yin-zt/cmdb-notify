@@ -39,7 +39,6 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 					}
 				}
 			}
-			fmt.Println(proSearchFields)
 			fieldResult := f.FindNeedSearchFields(proSearchFields)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
@@ -145,7 +144,6 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 	}
 	f.MakePfieldVal(retData, fdata, data)
 	if model == "HOST" {
-		fmt.Println(retData)
 		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
 		retData["exporterPort"] = 9100
 		retData["exporterType"] = "host" + "-exporter"
