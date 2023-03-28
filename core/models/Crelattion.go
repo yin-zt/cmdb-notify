@@ -17,5 +17,6 @@ type Data1 struct {
 }
 
 type ExtInfo1 struct {
-	ChangedRel string `json:"relation_side_id"`
+	ChangedRel    string `json:"relation_side_id"`
+	DstInstanceId string `json:"dst_instance_id"`
 }

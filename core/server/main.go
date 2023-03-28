@@ -27,6 +27,9 @@ func Start() {
 	for i := 0; i < 3; i++ {
 		go controllers.OperationFieldTask.DealRelationTask(controllers.OperateRelationChan)
 	}
+	for i := 0; i < 3; i++ {
+		go controllers.OperationFieldTask.DealRelationTask(controllers.OperateRelationChan)
+	}
 
 	go func() {
 		if err := http.ListenAndServe(":9999", r); err != nil && err != http.ErrServerClosed {
