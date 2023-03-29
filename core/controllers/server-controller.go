@@ -100,9 +100,11 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					OperateRelationChan <- rTask
 					OpeLog.Infof("success to send a relation change task (special fields) to channel %v", &rTask)
 					if fmt.Sprintf("%s_%s", changedModel, relateField) == "HOST_HOSTSTATUS" {
+
 						cStatus := &models.OperateHostStatus{
 							ID:        ChgObj.Data.TargetId,
 							NewStatus: ChgObj.Data.ExtInfo.DstInstanceId,
+							IP:        ChgObj.Data.ExtInfo.HostIp,
 						}
 						OperateStatusChan <- cStatus
 					}

@@ -12,11 +12,12 @@ type Data1 struct {
 	ExtInfo        ExtInfo1 `json:"ext_info"`
 	Memo           string   `json:"memo"`
 	TargetCategory string   `json:"target_category"`
-	TargetId       string   `json:"target_id"`
+	TargetId       string   `json:"target_id"` // 主机id
 	TargetName     string   `json:"target_name"`
 }
 
 type ExtInfo1 struct {
 	ChangedRel    string `json:"relation_side_id"`
 	DstInstanceId string `json:"dst_instance_id"`
+	HostIp        string `json:"instance_name""`
 }
