@@ -29,7 +29,8 @@ func (f OperationFieldService) DealHostStatus(tStatus <-chan *models.OperateHost
 			ip := statusTask.IP
 			statusId := statusTask.NewStatus
 			newStatus := config.StatusMap[statusId]
-
+			fmt.Println(ip)
+			fmt.Println(newStatus)
 		}
 	}
 

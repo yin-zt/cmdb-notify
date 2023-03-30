@@ -60,12 +60,13 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 				continue
 			}
 			targetCmdbData := findObj[0]
-			fmt.Println(targetCmdbData)
+			//fmt.Println(targetCmdbData)
 			if val, ok := config.ModelStatusMap[objId]; ok {
 				if targetCmdbData[val].(string) != "online" {
 					fmt.Println("offline")
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
+					//cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
 					fmt.Println(finalData)
 					if len(finalData) >= 1 {
 						fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
@@ -310,6 +311,7 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		}
 	} else {
 		OpeLog.Infof("do not delete ip or port field")
+		return delName
 	}
 	for _, oneStr := range returnName {
 		var begin bool

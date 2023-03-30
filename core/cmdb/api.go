@@ -153,6 +153,19 @@ func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
 	return result, isSuccess
 }
 
+// ArchiveObject 用于归档模型实例数据
+func (ez *Easyapi) ArchiveObject(modelId, instanceId string) {
+
+	archiveUrl := fmt.Sprintf("/cmdbservice/object/%s/instance_archive/%s", modelId, instanceId)
+	data := make(map[string]interface{})
+	reqRet, responResult := ez.SendRequest(archiveUrl, "POST", data)
+	if !responResult {
+		fmt.Println("fail to call cmdb5 archive api")
+	} else {
+		fmt.Println(reqRet)
+	}
+}
+
 // SendRequest to EasyOps OpenApi
 func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]interface{}) (string, bool) {
 	var isSuccess = false
