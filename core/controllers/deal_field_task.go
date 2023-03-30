@@ -66,10 +66,20 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 					fmt.Println("offline")
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
-					//cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
+					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
 					fmt.Println(finalData)
 					if len(finalData) >= 1 {
-						fmt.Println(f.CheckIpPort(proSearchFields, DiffData, finalData))
+						needArchiveExporter := f.CheckIpPort(proSearchFields, DiffData, finalData)
+						fmt.Println(needArchiveExporter)
+						if len(needArchiveExporter) != 0 {
+							for _, archiveOne := range needArchiveExporter {
+								archiveExporterId := f.SearchExporterIdByName(archiveOne)
+								if archiveExporterId != "" {
+									cmdb.Easy.ArchiveObject("EXPORTER", archiveExporterId)
+								}
+								fmt.Println(archiveExporterId)
+							}
+						}
 					} else {
 						OpeLog.Errorf("this instanceID: %s, has null postData", objId)
 					}
@@ -328,4 +338,22 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		}
 	}
 	return delName
+}
+
+func (f *OperationFieldService) SearchExporterIdByName(exporterName string) string {
+	fieldInPostData := map[string]int{"instanceId": 1, "name": 1}
+	objSearch := map[string]string{"exporterName": exporterName}
+	postData := map[string]interface{}{"page_size": 3, "page": 1}
+	postData["fields"] = fieldInPostData
+	postData["query"] = objSearch
+	ret, isSuccess := cmdb.Easy.GetAllInstance("EXPORTER", postData, 100)
+	if isSuccess {
+		for _, oneObj := range ret {
+			id := oneObj["instanceId"]
+			return fmt.Sprintf("%s", id)
+		}
+	} else {
+		OpeLog.Infof("can not find this name's 【%s】 instanceId", exporterName)
+	}
+	return ""
 }
