@@ -3,6 +3,7 @@ package cmdb
 import (
 	"fmt"
 	config "github.com/yin-zt/cmdb-notify/core/conf"
+	"github.com/yin-zt/cmdb-notify/core/loger"
 
 	//"os"
 
@@ -122,9 +123,9 @@ func (ez *Easyapi) UpdateOrCreateObjs(objectId string, key []string, postData []
 		url    = "/cmdbservice/object/" + objectId + "/instance/_import"
 	)
 	reqRet, reqIsSuccess := ez.SendRequest(url, "POST", params)
-	fmt.Println(reqRet)
-	fmt.Println(reqIsSuccess)
-
+	fmt.Println(reqRet, reqIsSuccess)
+	loger.LoggerOpe.Info(reqRet)
+	loger.LoggerOpe.Info(reqIsSuccess)
 }
 
 // GetModelFieldsWithP 获取模型中的以P_开头的属性字段

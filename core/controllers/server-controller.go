@@ -48,12 +48,16 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 			for _, value := range res {
 				if _, ok := val[value]; ok {
 					diff := Obj.Data.ExtInfo.DiffData
+					var flag bool
 					//nValue, oValue := C1.FindModifyVal(diff, value)
+					if "exporterstate" == strings.ToLower(value) {
+						flag = true
+					}
 					cTask := &models.OperateField{
 						Model:    changedModel,
 						Field:    value,
 						TargetId: Obj.Data.TargetId,
-						Pflag:    false,
+						Pflag:    flag,
 						//ChangeData: models.Diff{Old: oValue, New: nValue},
 						ChangeData: diff,
 					}

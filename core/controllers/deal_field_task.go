@@ -40,12 +40,13 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 			proSearchFields := config.BigMap[objId][objField]
 			DiffData := ftask.ChangeData
 			if ftask.Pflag {
-				if pFieldResult, ok := cmdb.Easy.GetModelFieldsWithP(objField); ok {
+				if pFieldResult, ok := cmdb.Easy.GetModelFieldsWithP(objId); ok {
 					for _, pVal := range pFieldResult {
 						proSearchFields[pVal] = fmt.Sprintf("customLabel.%s", pVal)
 					}
 				}
 			}
+
 			fieldResult := f.FindNeedSearchFields(proSearchFields)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
@@ -67,6 +68,7 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
 					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
+					OpeLog.Info(finalData)
 					fmt.Println(finalData)
 					if len(finalData) >= 1 {
 						needArchiveExporter := f.CheckIpPort(proSearchFields, DiffData, finalData)
@@ -165,12 +167,14 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
 		retData["exporterPort"] = 9100
 		retData["exporterType"] = "host" + "-exporter"
+		retData["serviceName"] = strings.ToUpper(model)
 		finalRetData = append(finalRetData, retData)
 	} else {
 		switch portValues := retData["exporterPort"].(type) {
 		case string:
 			retData["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], retData["exporterPort"])
 			retData["exporterType"] = strings.ToLower(model) + "-exporter"
+			retData["serviceName"] = strings.ToUpper(model)
 			finalRetData = append(finalRetData, retData)
 		case []interface{}:
 			for _, portItem := range portValues {
@@ -179,6 +183,7 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 				mTemp["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], portItem.(string))
 				mTemp["exporterPort"] = portItem.(string)
 				mTemp["exporterType"] = strings.ToLower(model) + "-exporter"
+				retData["serviceName"] = strings.ToUpper(model)
 				finalRetData = append(finalRetData, mTemp)
 			}
 		}
