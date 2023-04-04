@@ -61,10 +61,14 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 					return
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
+					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
+					OpeLog.Info(finalData)
 					fmt.Println(finalData)
 				}
 			} else {
 				finalData := f.AnalyOtherRelationData(objId, targetCmdbData, proSearchFields)
+				cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
+				OpeLog.Info(finalData)
 				fmt.Println(finalData)
 			}
 		case <-timer.C: //5s同步一次

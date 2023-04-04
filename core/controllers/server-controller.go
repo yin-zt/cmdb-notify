@@ -117,6 +117,23 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 				OpeLog.Info("no match")
 				OpeLog.Info(ChgObj.Topic, ChgObj.Data)
 			}
+		} else if strings.Index(topic, ".instance.create.") != -1 {
+			if strings.ToUpper(config.ModelStatusMap[changedModel]) == "EXPORTERSTATE" {
+				CreateObj := &models.CreateObj{}
+				utils.ParseBody(r, CreateObj)
+				objectId := CreateObj.Data.TargetId
+				diffData := make(map[string]interface{})
+				CreateTask := &models.OperateField{
+					Model:    changedModel,
+					Field:    config.ModelStatusMap[changedModel],
+					TargetId: objectId,
+					Pflag:    true,
+					//ChangeData: models.Diff{Old: oValue, New: nValue},
+					ChangeData: diffData,
+				}
+				OperateFieldChan <- CreateTask
+				OpeLog.Infof("success to send a createObject  task to channel %v", &CreateTask)
+			}
 		} else {
 			fmt.Println("do something")
 		}
