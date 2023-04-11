@@ -18,13 +18,13 @@ var (
 	OpeLog = loger.GetLoggerOperate()
 
 	// OperateFieldChan 字段修改任务
-	OperateFieldChan = make(chan *models.OperateField, 1000)
+	OperateFieldChan = make(chan *models.OperateField, 10000)
 
 	// OperateRelationChan 关系修改任务
-	OperateRelationChan = make(chan *models.OperateRelation, 1000)
+	OperateRelationChan = make(chan *models.OperateRelation, 10000)
 
 	// 主机状态字段修改同步到cmdb3
-	OperateStatusChan = make(chan *models.OperateHostStatus, 1000)
+	//OperateStatusChan = make(chan *models.OperateHostStatus, 1000)
 
 	C1 = Common{}
 )
@@ -103,15 +103,15 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					}
 					OperateRelationChan <- rTask
 					OpeLog.Infof("success to send a relation change task (special fields) to channel %v", &rTask)
-					if fmt.Sprintf("%s_%s", changedModel, relateField) == "HOST_HOSTSTATUS" {
-
-						cStatus := &models.OperateHostStatus{
-							ID:        ChgObj.Data.TargetId,
-							NewStatus: ChgObj.Data.ExtInfo.DstInstanceId,
-							IP:        ChgObj.Data.ExtInfo.HostIp,
-						}
-						OperateStatusChan <- cStatus
-					}
+					//if fmt.Sprintf("%s_%s", changedModel, relateField) == "HOST_HOSTSTATUS" {
+					//
+					//	cStatus := &models.OperateHostStatus{
+					//		ID:        ChgObj.Data.TargetId,
+					//		NewStatus: ChgObj.Data.ExtInfo.DstInstanceId,
+					//		IP:        ChgObj.Data.ExtInfo.HostIp,
+					//	}
+					//	OperateStatusChan <- cStatus
+					//}
 				}
 			} else {
 				OpeLog.Info("no match")

@@ -20,8 +20,9 @@ type OperationFieldService struct {
 
 // DealFieldTask 用于处理消息订阅推送关于字段变更的数据
 func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
+	var resp any
 	defer func() {
-		if err := recover(); err != nil {
+		if err := recover(); err != resp {
 			fmt.Println("捕获到了panic 产生的异常： ", err)
 			fmt.Println("捕获到panic的异常了，recover恢复回来")
 			OpeLog.Errorf("DealFieldTask 捕获到panic异常，recover恢复回来了，【err】为：%s", err)
@@ -29,7 +30,7 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 	}()
 	//var needSearch map[string]int
 	//var tempMap map[string]string
-	timer := time.NewTimer(50 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
 	for {
 		select {
@@ -67,9 +68,10 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 					fmt.Println("offline")
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
+					fmt.Println(finalData)
 					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
 					OpeLog.Info(finalData)
-					fmt.Println(finalData)
+					//fmt.Println(finalData)
 					if len(finalData) >= 1 {
 						needArchiveExporter := f.CheckIpPort(proSearchFields, DiffData, finalData)
 						fmt.Println(needArchiveExporter)

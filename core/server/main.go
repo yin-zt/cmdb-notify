@@ -21,15 +21,15 @@ func Start() {
 	r := mux.NewRouter()
 	routes.RegisterServerRouters(r)
 	http.Handle("/", r)
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 10; i++ {
 		go controllers.OperationFieldTask.DealFieldTask(controllers.OperateFieldChan)
 	}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 10; i++ {
 		go controllers.OperationFieldTask.DealRelationTask(controllers.OperateRelationChan)
 	}
-	for i := 0; i < 3; i++ {
-		go controllers.OperationFieldTask.DealRelationTask(controllers.OperateRelationChan)
-	}
+	//for i := 0; i < 3; i++ {
+	//	go controllers.OperationFieldTask.DealHostStatus(controllers.OperateStatusChan)
+	//}
 
 	go func() {
 		if err := http.ListenAndServe(":9999", r); err != nil && err != http.ErrServerClosed {
