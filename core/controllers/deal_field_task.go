@@ -30,7 +30,7 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 	}()
 	//var needSearch map[string]int
 	//var tempMap map[string]string
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	defer timer.Stop()
 	for {
 		select {
@@ -45,51 +45,64 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 					for _, pVal := range pFieldResult {
 						proSearchFields[pVal] = fmt.Sprintf("customLabel.%s", pVal)
 					}
+				} else {
+					OpeLog.Errorf("fail to search model P_ field with models:[%s]", objId)
+					continue
 				}
 			}
-
-			fieldResult := f.FindNeedSearchFields(proSearchFields)
+			var fieldResult = map[string]int{}
+			f.FindNeedSearchFields(proSearchFields, fieldResult)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
 			postData["fields"] = fieldResult
 			postData["query"] = objSearch
 			findObj, err := cmdb.Easy.GetAllInstance(objId, postData, 1)
+			OpeLog.Infof("%v", findObj)
+			fmt.Println(len(findObj))
+			fmt.Println(findObj)
 			if !err {
-				OpeLog.Error("fail to search obj")
+				OpeLog.Error("deal_field_task fail to search obj")
+				continue
 			}
 			if len(findObj) != 1 {
 				OpeLog.Errorf("can not find out this model: %s, instanceID: %s", objId, instanceId)
 				continue
 			}
 			targetCmdbData := findObj[0]
-			//fmt.Println(targetCmdbData)
+			OpeLog.Infof("%v", targetCmdbData)
+			fmt.Println(targetCmdbData)
 			if val, ok := config.ModelStatusMap[objId]; ok {
 				if targetCmdbData[val].(string) != "online" {
-					fmt.Println("offline")
+					OpeLog.Infof("This object status is not online, instanceID: %s; model: %s", instanceId, objId)
+					continue
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
 					fmt.Println(finalData)
 					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
-					OpeLog.Info(finalData)
+					OpeLog.Infof("create or update one exporter instance with data: %s", finalData)
 					//fmt.Println(finalData)
 					if len(finalData) >= 1 {
 						needArchiveExporter := f.CheckIpPort(proSearchFields, DiffData, finalData)
+						OpeLog.Infof("need to archive exporter obj with data: %s", strings.Join(needArchiveExporter, ","))
 						fmt.Println(needArchiveExporter)
 						if len(needArchiveExporter) != 0 {
 							for _, archiveOne := range needArchiveExporter {
 								archiveExporterId := f.SearchExporterIdByName(archiveOne)
 								if archiveExporterId != "" {
 									cmdb.Easy.ArchiveObject("EXPORTER", archiveExporterId)
+									OpeLog.Infof("success to archive obj with instanceID:[%s]", archiveExporterId)
+								} else {
+									OpeLog.Info("archive exporter id is null")
 								}
-								fmt.Println(archiveExporterId)
 							}
 						}
 					} else {
-						OpeLog.Errorf("this instanceID: %s, has null postData", objId)
+						OpeLog.Errorf("this instanceID: %s, has null postData", instanceId)
 					}
 				}
 			} else {
 				fmt.Println("has not status")
+				OpeLog.Error("this change field task does not has exporterstatus field")
 			}
 		case <-timer.C: //5s同步一次
 			fmt.Println("okr")
@@ -99,12 +112,10 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 }
 
 // FindNeedSearchFields 将字段组合成适合调用cmdb接口的格式
-func (f OperationFieldService) FindNeedSearchFields(retData map[string]string) *map[string]int {
-	var finalData = map[string]int{}
+func (f OperationFieldService) FindNeedSearchFields(retData map[string]string, finalData map[string]int) {
 	for key, _ := range retData {
 		finalData[key] = 1
 	}
-	return &finalData
 }
 
 // AnalyFieldData 分析从cmdb获取到的数据，并返回适合上报cmdb接口的数据

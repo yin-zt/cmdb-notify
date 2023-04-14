@@ -90,7 +90,10 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 			fmt.Println("[Fatal error] ", err.Error())
 			return result, isSuccess
 		}
-		req := reqData["list"].([]interface{})
+		req, ok := reqData["list"].([]interface{})
+		if !ok {
+			return nil, false
+		}
 		for _, i := range req {
 			result = append(result, i.(map[string]interface{}))
 		}
@@ -101,7 +104,10 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 				params["page"] = p
 				reqRet, reqIsSuccess = ez.SendRequest(url, "POST", params)
 				reqMap = ConvStringToMap(reqRet)
-				req := reqMap["data"].(map[string]interface{})["list"].([]interface{})
+				req, ok := reqMap["data"].(map[string]interface{})["list"].([]interface{})
+				if !ok {
+					return nil, false
+				}
 				for _, i := range req {
 					result = append(result, i.(map[string]interface{}))
 				}
@@ -112,7 +118,7 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 		return result, isSuccess
 	}
 
-	return result, isSuccess
+	return result, reqIsSuccess
 }
 
 // UpdateOrCreateObjs 更新或者创建模型实例
@@ -140,16 +146,20 @@ func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
 	reqRet, reqIsSuccess := ez.SendRequest(url, "Get", param)
 	if reqIsSuccess {
 		reqMap := ConvStringToMap(reqRet)
-		reqData := reqMap["data"].([]interface{})
-		for _, value := range reqData {
-			perField := value.(map[string]interface{})
-			filedVal := perField["id"]
-			fieldStr := fmt.Sprintf("%s", filedVal)
-			if strings.HasPrefix(fieldStr, "P_") {
-				result = append(result, fieldStr)
+		reqData, ok := reqMap["data"].([]interface{})
+		if ok {
+			for _, value := range reqData {
+				perField := value.(map[string]interface{})
+				filedVal := perField["id"]
+				fieldStr := fmt.Sprintf("%s", filedVal)
+				if strings.HasPrefix(fieldStr, "P_") {
+					result = append(result, fieldStr)
+				}
 			}
+			isSuccess = true
+		} else {
+			loger.LoggerOpe.Errorf("获取此模型字段异常，返回的数据非列表, 模型为：%s", objectId)
 		}
-		isSuccess = true
 	}
 	return result, isSuccess
 }

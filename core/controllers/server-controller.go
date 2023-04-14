@@ -46,6 +46,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 			utils.ParseBody(r, Obj)
 			res := Obj.Data.ExtInfo.ChangeFields
 			for _, value := range res {
+				_, testOk := config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, value)]
 				if _, ok := val[value]; ok {
 					diff := Obj.Data.ExtInfo.DiffData
 					var flag bool
@@ -63,7 +64,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					}
 					OperateFieldChan <- cTask
 					OpeLog.Infof("success to send a field changed task to channel %v", &cTask)
-				} else if strings.HasPrefix("P_", value) || config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, value)] {
+				} else if strings.HasPrefix(value, "P_") || testOk {
 					diff := Obj.Data.ExtInfo.DiffData
 					cTask := &models.OperateField{
 						Model:    changedModel,
@@ -86,6 +87,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 			utils.ParseBody(r, ChgObj)
 			relateField := ChgObj.Data.ExtInfo.ChangedRel
 			if targetFields, ok := config.BigMap[changedModel]; ok {
+				_, testOk := config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, relateField)]
 				if _, ok := targetFields[relateField]; ok {
 					rTask := &models.OperateRelation{
 						Model:    changedModel,
@@ -94,7 +96,7 @@ func ChangedObj(w http.ResponseWriter, r *http.Request) {
 					}
 					OperateRelationChan <- rTask
 					OpeLog.Infof("success to send a relation change task to channel %v", &rTask)
-				} else if config.SelfDefineField[fmt.Sprintf("%s_%s", changedModel, relateField)] {
+				} else if testOk {
 					rTask := &models.OperateRelation{
 						Model:    changedModel,
 						Field:    "P_",

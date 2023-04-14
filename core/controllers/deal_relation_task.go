@@ -22,7 +22,7 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 	}()
 	//var needSearch map[string]int
 	//var tempMap map[string]string
-	timer := time.NewTimer(50 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	defer timer.Stop()
 	for {
 		select {
@@ -38,38 +38,37 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 					}
 				}
 			}
-			fieldResult := f.FindNeedSearchFields(proSearchFields)
+			var fieldResult = map[string]int{}
+			f.FindNeedSearchFields(proSearchFields, fieldResult)
 			objSearch := map[string]string{"instanceId": instanceId}
 			postData := map[string]interface{}{"page_size": 100, "page": 1}
 			postData["fields"] = fieldResult
 			postData["query"] = objSearch
-			findObj, err := cmdb.Easy.GetAllInstance(objId, postData, 1)
-			if !err {
-				OpeLog.Error("fail to search obj")
+			findObj, ok := cmdb.Easy.GetAllInstance(objId, postData, 1)
+			if !ok {
+				OpeLog.Error("deal_relation_task fail to search obj")
+				continue
 			}
 			if len(findObj) == 0 {
 				OpeLog.Errorf("can not find out this model: %s, instanceID: %s", objId, instanceId)
 				continue
 			}
-			if len(findObj) == 0 {
-				return
-			}
 			targetCmdbData := findObj[0]
-			fmt.Println(targetCmdbData)
+			OpeLog.Infof("deal with data: %v", targetCmdbData)
 			if statusField, ok := config.ModelStatusMap[objId]; ok {
 				if targetCmdbData[statusField].(string) != "online" {
 					OpeLog.Infof("This object status is not online, instanceID: %s; model: %s", instanceId, objId)
-					return
+					continue
 				} else {
 					finalData := f.AnalyFieldData(objId, targetCmdbData, proSearchFields)
 					cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
-					OpeLog.Info(finalData)
+					OpeLog.Infof("deal_relation_task post data with %v", finalData)
 					fmt.Println(finalData)
 				}
 			} else {
 				finalData := f.AnalyOtherRelationData(objId, targetCmdbData, proSearchFields)
 				cmdb.Easy.UpdateOrCreateObjs("EXPORTER", []string{"exporterName"}, finalData)
-				OpeLog.Info(finalData)
+				OpeLog.Infof("%v", finalData)
 				fmt.Println(finalData)
 			}
 		case <-timer.C: //5s同步一次

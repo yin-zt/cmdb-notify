@@ -8,7 +8,7 @@ var (
 <seelog type="asynctimer" asyncinterval="1000" minlevel="trace" maxlevel="error">  
 	<outputs formatid="common">  
 		<buffered formatid="common" size="1048576" flushperiod="1000">  
-			<rollingfile type="size" filename="/var/loger/cmdb-notify-operate.log" maxsize="104857600" maxrolls="10"/>  
+			<rollingfile type="size" filename="/var/loger/cmdb-notify-operate.log" maxsize="104857600" maxrolls="5"/>  
 		</buffered>
 	</outputs>  	  
 	 <formats>
@@ -20,7 +20,7 @@ var (
 <seelog type="asynctimer" asyncinterval="1000" minlevel="trace" maxlevel="error">  
 	<outputs formatid="common">  
 		<buffered formatid="common" size="1048576" flushperiod="1000">  
-			<rollingfile type="size" filename="/var/loger/cmdb-notify-access.log" maxsize="104857600" maxrolls="10"/>  
+			<rollingfile type="size" filename="/var/loger/cmdb-notify-access.log" maxsize="104857600" maxrolls="5"/>  
 		</buffered>
 	</outputs>  	  
 	 <formats>
