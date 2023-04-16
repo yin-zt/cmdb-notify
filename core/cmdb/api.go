@@ -27,8 +27,9 @@ import (
 )
 
 var (
-	respon any
-	Easy   = NewEasyapi(config.CmdbHost, config.CmdbAk, config.CmdbSk)
+	respon       any
+	Easy         = NewEasyapi(config.CmdbHost, config.CmdbAk, config.CmdbSk)
+	cmdbOpeLoger = loger.GetLoggerOperate()
 )
 
 // EasyApi specifies a tool using EasyOps CMDB api
@@ -73,6 +74,15 @@ func (ez *Easyapi) ChangeListToMap(srcList []map[string]interface{}, keys []stri
 // objectId: the CMDB resource object id
 // the return is the list of map[string]interface{}
 func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}, pagesize int) ([]map[string]interface{}, bool) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("GetAllInstance 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 	var isSuccess = false
 	var result []map[string]interface{}
 	if pagesize > 2000 {
@@ -123,19 +133,36 @@ func (ez *Easyapi) GetAllInstance(objectId string, params map[string]interface{}
 
 // UpdateOrCreateObjs 更新或者创建模型实例
 func (ez *Easyapi) UpdateOrCreateObjs(objectId string, key []string, postData []map[string]interface{}) {
-
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("UpdateOrCreateObjs 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 	var (
 		params = map[string]interface{}{"keys": key, "datas": postData}
 		url    = "/cmdbservice/object/" + objectId + "/instance/_import"
 	)
 	reqRet, reqIsSuccess := ez.SendRequest(url, "POST", params)
 	fmt.Println(reqRet, reqIsSuccess)
-	loger.LoggerOpe.Info(reqRet)
-	loger.LoggerOpe.Info(reqIsSuccess)
+	cmdbOpeLoger.Info(reqRet)
+	cmdbOpeLoger.Info(reqIsSuccess)
 }
 
 // GetModelFieldsWithP 获取模型中的以P_开头的属性字段
 func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("GetModelFieldsWithP 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 	var (
 		isSuccess bool
 		result    []string
@@ -158,7 +185,7 @@ func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
 			}
 			isSuccess = true
 		} else {
-			loger.LoggerOpe.Errorf("获取此模型字段异常，返回的数据非列表, 模型为：%s", objectId)
+			cmdbOpeLoger.Errorf("获取此模型字段异常，返回的数据非列表, 模型为：%s", objectId)
 		}
 	}
 	return result, isSuccess
@@ -166,6 +193,15 @@ func (ez *Easyapi) GetModelFieldsWithP(objectId string) ([]string, bool) {
 
 // ArchiveObject 用于归档模型实例数据
 func (ez *Easyapi) ArchiveObject(modelId, instanceId string) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("ArchiveObject 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 
 	archiveUrl := fmt.Sprintf("/cmdbservice/object/%s/instance_archive/%s", modelId, instanceId)
 	data := make(map[string]interface{})
@@ -179,6 +215,15 @@ func (ez *Easyapi) ArchiveObject(modelId, instanceId string) {
 
 // SendRequest to EasyOps OpenApi
 func (ez *Easyapi) SendRequest(reqUrl string, method string, params map[string]interface{}) (string, bool) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("SendRequest 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 	var isSuccess = false
 	var ret = ""
 	// timestamp
@@ -286,6 +331,15 @@ StringToSign = HTTP-Verb + "\n" +
                AccessKey;
 */
 func (ez *Easyapi) genSignature(url string, method string, params map[string]interface{}, nowTS string) string {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			cmdbOpeLoger.Errorf("genSignature 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			cmdbOpeLoger.Flush()
+		}
+	}()
 
 	//fmt.Println(reflect.ValueOf(nowTS))
 	var urlParams string = ""

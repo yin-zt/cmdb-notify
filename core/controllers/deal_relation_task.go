@@ -16,8 +16,8 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 	defer func() {
 		if err := recover(); err != resp {
 			fmt.Println("捕获到了panic 产生的异常： ", err)
-			fmt.Println("捕获到panic的异常了，recover恢复回来")
-			OpeLog.Errorf("DealRelationTask 捕获到panic异常，recover恢复回来了，【err】为：%s", err)
+			fmt.Println("捕获到panic的异常了，recover并没有恢复回来")
+			OpeLog.Errorf("DealRelationTask 捕获到panic异常，recover并没有恢复回来了，【err】为：%s", err)
 		}
 	}()
 	//var needSearch map[string]int
@@ -36,6 +36,9 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 					for _, pVal := range pFieldResult {
 						proSearchFields[pVal] = fmt.Sprintf("customLabel.%s", pVal)
 					}
+				} else {
+					OpeLog.Errorf("deal relation task can not find out this model fields info with ID: %v", objId)
+					continue
 				}
 			}
 			var fieldResult = map[string]int{}
@@ -112,6 +115,14 @@ func (f OperationFieldService) DealRelationTask(ric <-chan *models.OperateRelati
 //}
 
 func (f OperationFieldService) AnalyOtherRelationData(model string, cmdbData map[string]interface{}, rfields map[string]string) []map[string]interface{} {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover并没有恢复回来")
+			OpeLog.Errorf("AnalyOtherRelationData 捕获到panic异常，recover并没有恢复回来了，【err】为：%s", err)
+		}
+	}()
 	publicKeyVal := make(map[string]interface{})
 	hasSearchOrNot := make(map[string]bool)
 	var finalRetData []map[string]interface{}
@@ -151,6 +162,7 @@ func (f OperationFieldService) AnalyOtherRelationData(model string, cmdbData map
 					hasSearchOrNot[firstKey] = true
 					needSearchFields := f.findAllNeedSearchField(rfields, firstKey)
 					for _, oneItem := range firstLevelData.([]interface{}) {
+						fmt.Println("test log")
 						if dataMap, ok := oneItem.(map[string]interface{}); !ok {
 							OpeLog.Errorf("二层关联字段在cmdb返回数据中并不是字典格式存在, data: %v", oneItem)
 							continue

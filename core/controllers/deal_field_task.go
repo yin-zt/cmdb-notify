@@ -25,7 +25,8 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 		if err := recover(); err != resp {
 			fmt.Println("捕获到了panic 产生的异常： ", err)
 			fmt.Println("捕获到panic的异常了，recover恢复回来")
-			OpeLog.Errorf("DealFieldTask 捕获到panic异常，recover恢复回来了，【err】为：%s", err)
+			OpeLog.Errorf("DealFieldTask 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
 		}
 	}()
 	//var needSearch map[string]int
@@ -72,7 +73,12 @@ func (f OperationFieldService) DealFieldTask(fic <-chan *models.OperateField) {
 			OpeLog.Infof("%v", targetCmdbData)
 			fmt.Println(targetCmdbData)
 			if val, ok := config.ModelStatusMap[objId]; ok {
-				if targetCmdbData[val].(string) != "online" {
+				statusStr, ok := targetCmdbData[val].(string)
+				if !ok {
+					OpeLog.Errorf("此模型: %s, exporterState 字段非 字符串，实例为：%s", objId, instanceId)
+					continue
+				}
+				if statusStr != "online" {
 					OpeLog.Infof("This object status is not online, instanceID: %s; model: %s", instanceId, objId)
 					continue
 				} else {
@@ -120,6 +126,15 @@ func (f OperationFieldService) FindNeedSearchFields(retData map[string]string, f
 
 // AnalyFieldData 分析从cmdb获取到的数据，并返回适合上报cmdb接口的数据
 func (f OperationFieldService) AnalyFieldData(model string, data map[string]interface{}, fdata map[string]string) []map[string]interface{} {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			OpeLog.Errorf("AnalyFieldData 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
+		}
+	}()
 	var finalRetData []map[string]interface{}
 	var retData = map[string]interface{}{}
 	for key, val := range fdata {
@@ -139,12 +154,21 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 			relateData := data[firstKey]
 			storeVal := ""
 			for _, item := range relateData.([]interface{}) {
-				itemVal := item.(map[string]interface{})
+				itemVal, okl := item.(map[string]interface{})
+				if !okl {
+					OpeLog.Errorf("%v 竟然不是map[string]interface{} 格式", item)
+					continue
+				}
 				if realVal, ok := itemVal[secondKey]; !ok {
 					response = "返回的关联数据中没有这个键的值"
 					continue
 				} else {
-					storeVal = storeVal + ";" + realVal.(string)
+					realStr, ok := realVal.(string)
+					if !ok {
+						OpeLog.Errorf("AnalyFieldData 分析: %v 竟然不是字符串", realVal)
+						continue
+					}
+					storeVal = storeVal + ";" + realStr
 				}
 			}
 			storeVal = strings.Trim(storeVal, ";")
@@ -156,18 +180,31 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 			firstLevelData := data[firstKey]
 			storeVal := ""
 			for _, item := range firstLevelData.([]interface{}) {
-				itemVal := item.(map[string]interface{})
+				itemVal, ok := item.(map[string]interface{})
+				if !ok {
+					OpeLog.Errorf("AnalyFieldData is not map[string]interface{} wtih %v", item)
+					continue
+				}
 				if secondLevelData, ok := itemVal[secondKey]; !ok {
 					response = "返回的第二层关联数据中没有这个键的值"
 					continue
 				} else {
 					for _, secondLevelVal := range secondLevelData.([]interface{}) {
-						thirdLevelData := secondLevelVal.(map[string]interface{})
+						thirdLevelData, ok := secondLevelVal.(map[string]interface{})
+						if !ok {
+							OpeLog.Errorf("secondLevelVal is not map[string]interface{} with value: %v", secondLevelVal)
+							continue
+						}
 						if thirdLevelVal, ok := thirdLevelData[thirdKey]; !ok {
 							response = "返回的第三层关联数据中没有这个键的值"
 							continue
 						} else {
-							storeVal = storeVal + ";" + thirdLevelVal.(string)
+							thridLevelStr, ok := thirdLevelVal.(string)
+							if !ok {
+								OpeLog.Errorf("thirdLevelVal 的值: %v 竟然不是字符串", thirdLevelVal)
+								continue
+							}
+							storeVal = storeVal + ";" + thridLevelStr
 						}
 					}
 				}
@@ -177,7 +214,12 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 	}
 	f.MakePfieldVal(retData, fdata, data)
 	if model == "HOST" {
-		retData["exporterName"] = retData["ip"].(string) + "-" + "9100"
+		ipStr, ok := retData["ip"].(string)
+		if !ok {
+			OpeLog.Errorf("retData[ip]的值: %v 竟然不是字符串", retData)
+			return finalRetData
+		}
+		retData["exporterName"] = ipStr + "-" + "9100"
 		retData["exporterPort"] = 9100
 		retData["exporterType"] = "host" + "-exporter"
 		retData["serviceName"] = strings.ToUpper(model)
@@ -191,10 +233,15 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 			finalRetData = append(finalRetData, retData)
 		case []interface{}:
 			for _, portItem := range portValues {
+				portStr, ok := portItem.(string)
+				if !ok {
+					OpeLog.Errorf("portValues列表的值中竟然有不是字符串的存在，:%v", portValues)
+					continue
+				}
 				mTemp := make(map[string]interface{})
 				gocopy.Copy(&mTemp, &retData)
-				mTemp["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], portItem.(string))
-				mTemp["exporterPort"] = portItem.(string)
+				mTemp["exporterName"] = fmt.Sprintf("%s-%s", retData["ip"], portStr)
+				mTemp["exporterPort"] = portStr
 				mTemp["exporterType"] = strings.ToLower(model) + "-exporter"
 				retData["serviceName"] = strings.ToUpper(model)
 				finalRetData = append(finalRetData, mTemp)
@@ -206,23 +253,38 @@ func (f OperationFieldService) AnalyFieldData(model string, data map[string]inte
 }
 
 // MakeKeyVal 根据字典映射值中是否包含"."进行特定处理
+// key为bigMap中的值
 func (f OperationFieldService) MakeKeyVal(key string, addVal interface{}, data map[string]interface{}) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			OpeLog.Errorf("MakeKeyVal 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
+		}
+	}()
 	if addVal == "" {
 		return
 	}
 	if strings.Count(key, ".") == 1 {
+		addValStr, ok := addVal.(string)
+		if !ok {
+			OpeLog.Errorf("addVal的值: %v 竟然不是字符串", addVal)
+			return
+		}
 		firstKey := strings.Split(key, ".")[0]
 		secondKey := strings.Split(key, ".")[1]
 		if _, ok := data[firstKey]; !ok {
-			data[firstKey] = map[string]string{secondKey: addVal.(string)}
+			data[firstKey] = map[string]string{secondKey: addValStr}
 		} else {
 			tempData := data[firstKey]
 			dictData, ok := tempData.(map[string]string)
 			if ok {
 				if _, ok := dictData[secondKey]; ok {
-					dictData[secondKey] = dictData[secondKey] + ";" + addVal.(string)
+					dictData[secondKey] = dictData[secondKey] + ";" + addValStr
 				} else {
-					dictData[secondKey] = addVal.(string)
+					dictData[secondKey] = addValStr
 				}
 				data[firstKey] = dictData
 			}
@@ -231,11 +293,16 @@ func (f OperationFieldService) MakeKeyVal(key string, addVal interface{}, data m
 		if singleField, ok := data[key]; ok {
 			stringVal, ok := singleField.(string)
 			if !ok {
-				response = "singleField is not a string field"
-				panic(response)
+				OpeLog.Errorf("singleField is not a string field with value: %v", singleField)
+			} else {
+				addValStr, ok := addVal.(string)
+				if !ok {
+					OpeLog.Errorf("this single key addVal is not string :%v", addVal)
+				} else {
+					tempVal := stringVal + ";" + addValStr
+					data[key] = strings.Trim(tempVal, ";")
+				}
 			}
-			tempVal := stringVal + ";" + addVal.(string)
-			data[key] = strings.Trim(tempVal, ";")
 		} else {
 			data[key] = addVal
 
@@ -251,10 +318,24 @@ func (f OperationFieldService) MakeKeyVal(key string, addVal interface{}, data m
 //}
 
 func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata map[string]string, cmdbData map[string]interface{}) {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			OpeLog.Errorf("MakePfieldVal 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
+		}
+	}()
 	for _, value := range fdata {
 		if strings.HasPrefix(value, "P_") {
-			dataVal := cmdbData[value].(string)
+			dataVal, ok := cmdbData[value].(string)
+			if !ok {
+				OpeLog.Errorf("MakePfieldVal fdata字段非字符串, %v", cmdbData[value])
+				continue
+			}
 			if dataVal == "" {
+				OpeLog.Infof("dataVal 值为空")
 				continue
 			}
 			if _, ok := data["customLabel"]; !ok {
@@ -277,6 +358,15 @@ func (f OperationFieldService) MakePfieldVal(data map[string]interface{}, fdata 
 
 // CheckIpPort 检查修改字段中是否包含ip和port字段
 func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData map[string]interface{}, wholeVal []map[string]interface{}) []string {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			OpeLog.Errorf("CheckIpPort 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
+		}
+	}()
 	var (
 		portFlag, ipFlag              = "", ""
 		portBool, ipBool              bool
@@ -295,11 +385,20 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		portTempData := changeData[portFlag]
 		if portTempData != nil {
 			portBool = true
-			oldNewPort := portTempData.(map[string]interface{})
+			oldNewPort, ok := portTempData.(map[string]interface{})
+			if !ok {
+				OpeLog.Errorf("portTempData value is not map[string]interface{}, with value:%v", portTempData)
+				return nil
+			}
 			switch portVals := oldNewPort["old"].(type) {
 			case []interface{}:
 				for _, oneport := range portVals {
-					portList = append(portList, oneport.(string))
+					onePortStr, ok := oneport.(string)
+					if !ok {
+						OpeLog.Errorf("端口列表元素非字符串, 值为: %v", oneport)
+						continue
+					}
+					portList = append(portList, onePortStr)
 				}
 			case string:
 				portList = append(portList, portVals)
@@ -310,8 +409,17 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		ipTempData := changeData[ipFlag]
 		if ipTempData != nil {
 			ipBool = true
-			ipTempMap := ipTempData.(map[string]interface{})
-			ipStr = ipTempMap["old"].(string)
+			ipTempMap, ok := ipTempData.(map[string]interface{})
+			if !ok {
+				OpeLog.Errorf("ipTempData value is not map[string]interface{}, :%v", ipTempData)
+				return nil
+			}
+			ipStrVal, ok := ipTempMap["old"].(string)
+			if !ok {
+				OpeLog.Errorf("ipTempMap value is not string, :%v", ipTempMap["old"])
+				return nil
+			}
+			ipStr = ipStrVal
 		}
 	}
 	if ipBool && portBool {
@@ -333,7 +441,11 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 		if len(wholeVal) == 0 {
 			return returnName
 		}
-		ipStr = wholeVal[0]["ip"].(string)
+		ipStr, ok := wholeVal[0]["ip"].(string)
+		if !ok {
+			OpeLog.Errorf("wholeVal ip value is not string, with %v", wholeVal[0]["ip"])
+			return nil
+		}
 		for _, portVal := range portList {
 			returnName = append(returnName, fmt.Sprintf("%s-%s", ipStr, portVal))
 		}
@@ -359,6 +471,15 @@ func (f *OperationFieldService) CheckIpPort(fdata map[string]string, changeData 
 }
 
 func (f *OperationFieldService) SearchExporterIdByName(exporterName string) string {
+	var resp any
+	defer func() {
+		if err := recover(); err != resp {
+			fmt.Println("捕获到了panic 产生的异常： ", err)
+			fmt.Println("捕获到panic的异常了，recover恢复回来")
+			OpeLog.Errorf("SearchExporterIdByName 捕获到panic异常，recover并没有恢复，【err】为：%s", err)
+			OpeLog.Flush()
+		}
+	}()
 	fieldInPostData := map[string]int{"instanceId": 1, "name": 1}
 	objSearch := map[string]string{"exporterName": exporterName}
 	postData := map[string]interface{}{"page_size": 3, "page": 1}
